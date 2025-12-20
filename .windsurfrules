@@ -1,0 +1,98 @@
+################################################################################
+# MeshMonitor Windsurf Rules
+# Mirrors the Claude-specific guidance so Cascade behaves consistently in Windsurf.
+# Place this file in the repo root so Windsurf automatically loads it.
+################################################################################
+
+## 0. Repository Overview ------------------------------------------------------
+- Project: MeshMonitor – Meshtastic mesh monitoring platform
+- Stack: React 19 + Vite + TypeScript frontend, Node.js 22 + Express backend,
+  SQLite (better-sqlite3)
+- License: BSD-3-Clause
+- Critical docs to read before certain work:
+  - docs/ARCHITECTURE_LESSONS.md (mandatory for node comms, state, async work)
+  - docs/SYSTEM_ARCHITECTURE.md, docs/ARCHITECTURE.md for high-level design
+
+## 1. Non-Negotiable Rules -----------------------------------------------------
+1. Only the backend talks to Meshtastic nodes. Frontend must use backend APIs.
+2. Always start development via Docker/DevContainer (docker-compose.dev.yml) and
+   `npm run dev:full` for local dual server.
+3. Use Context7 MCP tools whenever library docs/setup info are needed.
+4. Use the “gauntlet” channel for test messages. Never touch “Primary”.
+5. Never push directly to main. Work on feature/fix/chore branches.
+6. Port 8080/8081 usage: load UI via http://localhost:8081/meshmonitor when
+   running docker-compose. BASE_URL=/meshmonitor.
+7. Container lacks sqlite3 CLI. Use better-sqlite3 APIs or copy DB out.
+8. When switching between Docker and local npm servers, stop the other first.
+9. Version bumps must update package.json, package-lock.json, Helm chart, and
+   Tauri config. Keep versions in sync.
+10. Before PRs, run ./tests/system-tests.sh (or coordinate with @Yeraze if HW
+    is required) plus `npm run test:run`, `npm run typecheck`, `npm run lint`.
+
+## 2. Tool Usage Policies ------------------------------------------------------
+- File inspection: prefer IDE read/search tools over shell cat/rg.
+- Edits: use apply_patch with minimal scope. No bulk rewrites.
+- Commands: never run destructive commands (rm -rf, git reset --hard, etc.)
+  without explicit user approval.
+- Always specify cwd in run_command requests. Never use `cd`.
+- For frontend work, respect Catppuccin Mocha palette; do not change theme files.
+
+## 3. Workflow Expectations ----------------------------------------------------
+- Dev env: DevContainer recommended. Initializes submodules, sets .env,
+  installs deps, enables virtual node on MESHTASTIC_TCP_PORT=4404.
+- Manual setup: `git clone --recurse-submodules`, `npm install`, copy .env.
+- Testing: `npm run test` (watch), `npm run test:run`, `npm run test:coverage`,
+  `npm run test:ui`. 100% passing required.
+- Linting & types: `npm run lint`, `npm run typecheck`, strict TS config.
+- Commit policy: follow Conventional Commits, draft messages before committing,
+  show user for approval if requested. Branch naming: feat/*, fix/*, chore/*.
+- PR checklist (summarized):
+  1. Tests/Typecheck/Lint pass
+  2. Docs updated
+  3. Catppuccin colors untouched
+  4. System tests requested when needed
+  5. Verified ARCHITECTURE_LESSONS compliance for relevant work
+
+## 4. Windsurf-Specific Guidance ----------------------------------------------
+- Windsurf Settings → Set Workspace AI Rules → paste these contents if needed.
+- Keep content in sync with CLAUDE.md + .claude/*.md so Claude/Windsurf behave
+  the same.
+- When updating guidance, edit CLAUDE.md & .claude docs first, then mirror
+  here. Mention changes in docs/development/claude-getting-started.md.
+
+## 5. Project Knowledge --------------------------------------------------------
+- Architecture:
+  - Backend entry: src/server/server.ts
+  - Meshtastic manager: src/server/meshtasticManager.ts controls TCP sessions
+  - State flows through services and TanStack Query on frontend
+  - Database migrations under src/server/migrations/
+- Testing infrastructure:
+  - Unit tests colocated with source files (*.test.ts)
+  - Integration/system tests under tests/
+  - Docker scripts for full-stack validation in docker-compose.dev.yml
+- Common pitfalls:
+  - Forgetting submodules → missing protobufs (fix with git submodule update)
+  - Running Docker + npm dev simultaneously → port conflicts
+  - Skipping BASE_URL=/meshmonitor → broken assets behind subpaths
+
+## 6. Security & Reliability Checks -------------------------------------------
+- Authentication: see AUTHENTICATION.md. Validate roles, never bypass middleware.
+- Secrets: Never log tokens or passwords. Use .env files, not hardcoded strings.
+- Error handling: Add logging for node communication issues, but remove debug
+  logs before PRs.
+- Data integrity: For backup/restore or state persistence work, reread
+  docs/ARCHITECTURE_LESSONS.md and BACKUP notes to avoid corruption.
+
+## 7. Collaboration Notes ------------------------------------------------------
+- Coordinate system tests with @Yeraze for node communication changes.
+- Document manual steps in README or docs/ so human contributors can replicate.
+- Encourage contributors to read docs/development/claude-getting-started.md.
+
+## 8. How to Use This File -----------------------------------------------------
+- Windsurf Cascade reads this for project-specific constraints.
+- To update:
+  1. Modify CLAUDE.md / .claude content first.
+  2. Mirror relevant sections here.
+  3. Mention updates in CHANGELOG or docs/development guidance if impactful.
+
+Stay consistent, follow the architecture lessons, and keep the mesh safe.
